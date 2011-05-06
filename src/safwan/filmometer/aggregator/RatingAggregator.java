@@ -1,16 +1,22 @@
 package safwan.filmometer.aggregator;
 
-/**
- * Created by IntelliJ IDEA.
- * User: safwan
- * Date: 5/05/11
- * Time: 8:55 PM
- * To change this template use File | Settings | File Templates.
- */
+import safwan.filmometer.tools.RestClient;
+
 public class RatingAggregator {
-    public static String getAverageRatingFor(String film)
+    public String getAverageRatingFor(String film)
     {
         //TODO: Load all sources, get ratings from each and average them out
-        return "";
+
+        RestClient client = new RestClient("http://www.imdbapi.com");
+        client.AddParam("t", film);
+
+        try {
+            client.Execute(RestClient.RequestMethod.GET);
+        } catch (Exception e) {
+            return e.toString();
+        }
+
+        String response = client.getResponse();
+        return response;
     }
 }

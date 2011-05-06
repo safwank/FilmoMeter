@@ -140,22 +140,23 @@ public class LookupActivity extends Activity implements Animation.AnimationListe
         @Override
         protected String doInBackground(String... args) {
             String query = args[0];
-            String parsedText = null;
+            String averageRating = null;
 
             try {
                 if (query != null) {
                     // Push our requested word to the title bar
                     publishProgress(query);
-                    Thread.sleep(2000);
+
+                    averageRating = mAggregator.getAverageRatingFor(query);
                 }
             } catch (Exception e) {
             }
 
-            if (parsedText == null) {
-                parsedText = getString(R.string.empty_result);
+            if (averageRating == null) {
+                averageRating = getString(R.string.empty_result);
             }
 
-            return parsedText;
+            return averageRating;
         }
 
         /**
