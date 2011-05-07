@@ -8,10 +8,10 @@ public class IMDBSource implements IRatingSource {
 
     public double getRatingFor(String film) {
         RestClient client = new RestClient("http://www.imdbapi.com");
-        client.AddParam("t", film);
+        client.addParam("t", film);
 
         try {
-            client.Execute(RestClient.RequestMethod.GET);
+            client.execute(RestClient.RequestMethod.GET);
         } catch (Exception e) {
             return 0;
         }

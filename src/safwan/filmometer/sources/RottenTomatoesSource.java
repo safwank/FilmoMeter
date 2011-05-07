@@ -9,12 +9,12 @@ public class RottenTomatoesSource implements IRatingSource {
 
     public double getRatingFor(String film) {
         RestClient client = new RestClient("http://api.rottentomatoes.com/api/public/v1.0/movies.json");
-        client.AddParam("apikey", "b2x78beenefg6tq3ynr56r4a");
-        client.AddParam("q", film);
-        client.AddParam("page_limit", "1");
+        client.addParam("apikey", "b2x78beenefg6tq3ynr56r4a");
+        client.addParam("q", film);
+        client.addParam("page_limit", "1");
 
         try {
-            client.Execute(RestClient.RequestMethod.GET);
+            client.execute(RestClient.RequestMethod.GET);
         } catch (Exception e) {
             return 0;
         }
