@@ -1,27 +1,30 @@
 package safwan.filmometer.aggregator;
 
 import safwan.filmometer.sources.IMDBSource;
-import safwan.filmometer.sources.IRatingSource;
+import safwan.filmometer.sources.RatingSource;
 import safwan.filmometer.sources.RottenTomatoesSource;
+import safwan.filmometer.sources.TMDBSource;
 
 import java.util.ArrayList;
 
 //TODO: Figure out whether the various scores actually correspond to the same film
 public class RatingAggregator {
 
+    private ArrayList<RatingSource> ratingSources = new ArrayList<RatingSource>();
+
     public String getAverageRatingFor(String film)
     {
-        ArrayList<IRatingSource> ratingSources = loadAllSources();
+        ArrayList<RatingSource> ratingSources = loadAllSources();
         double averageScore = getAverageScoreFrom(ratingSources, film);
 
         return String.valueOf(averageScore);
     }
 
-    private double getAverageScoreFrom(ArrayList<IRatingSource> ratingSources, String film) {
+    private double getAverageScoreFrom(ArrayList<RatingSource> ratingSources, String film) {
         double totalScore = 0;
         int validSourceCount = 0;
 
-        for(IRatingSource source : ratingSources)
+        for(RatingSource source : ratingSources)
         {
             double currentScore = source.getRatingFor(film);
 
@@ -35,20 +38,24 @@ public class RatingAggregator {
         return totalScore/validSourceCount;
     }
 
-    private ArrayList<IRatingSource> loadAllSources() {
-        ArrayList<IRatingSource> ratingSources = new ArrayList<IRatingSource>();
+    private ArrayList<RatingSource> loadAllSources() {
+        if (ratingSources.size() > 0)
+        {
+            return ratingSources;
+        }
 
-        //TODO: figure out how to make this bloody thing work with ServiceLoader (through META-INF/services) or some other method
+        //TODO: Figure out how to make this bloody thing work with ServiceLoader (through META-INF/services) or some other method
         /*
-        ServiceLoader<IRatingSource> ratingSourceLoader = ServiceLoader.load(IRatingSource.class);
+        ServiceLoader<RatingSource> ratingSourceLoader = ServiceLoader.load(RatingSource.class);
 
-        for(IRatingSource ratingSource : ratingSourceLoader)
+        for(RatingSource ratingSource : ratingSourceLoader)
         {
             ratingSources.add(ratingSource);
         }*/
 
         ratingSources.add(new IMDBSource());
         ratingSources.add(new RottenTomatoesSource());
+        ratingSources.add(new TMDBSource());
 
         return ratingSources;
     }

@@ -4,11 +4,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import safwan.filmometer.tools.RestClient;
 
-public class IMDBSource implements RatingSource {
+public class TMDBSource implements RatingSource {
 
     public double getRatingFor(String film) {
-        RestClient client = new RestClient("http://www.imdbapi.com");
-        client.addParam("t", film);
+        String apiURL = String.format("http://api.themoviedb.org/2.1/Movie.search/en/json/%s/%s", "apikey", film);
+        RestClient client = new RestClient(apiURL);
 
         try {
             client.execute(RestClient.RequestMethod.GET);
@@ -28,9 +28,16 @@ public class IMDBSource implements RatingSource {
 
         try {
             JSONObject jsonResult = new JSONObject(response);
-            return jsonResult != null ? jsonResult.getDouble("Rating") : 0;
+            int totalResults = jsonResult.getInt("totalResults");
+
+            if (totalResults > 0) {
+                JSONObject firstResult = jsonResult.getJSONArray("movies").getJSONObject(0);
+                return firstResult != null ? firstResult.getDouble("score") : 0;
+            }
         } catch (JSONException e) {
             return 0;
         }
+
+        return 0;
     }
 }

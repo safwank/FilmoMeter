@@ -150,6 +150,7 @@ public class LookupActivity extends Activity implements Animation.AnimationListe
                     averageRating = mAggregator.getAverageRatingFor(query);
                 }
             } catch (Exception e) {
+                e.printStackTrace();
             }
 
             if (averageRating == null) {

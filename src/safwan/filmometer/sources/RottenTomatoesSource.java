@@ -5,7 +5,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import safwan.filmometer.tools.RestClient;
 
-public class RottenTomatoesSource implements IRatingSource {
+public class RottenTomatoesSource implements RatingSource {
 
     public double getRatingFor(String film) {
         RestClient client = new RestClient("http://api.rottentomatoes.com/api/public/v1.0/movies.json");
@@ -20,10 +20,15 @@ public class RottenTomatoesSource implements IRatingSource {
         }
 
         String response = client.getResponse();
-        return getAverageRatingFrom(response);
+        return getRatingFrom(response);
     }
 
-    private double getAverageRatingFrom(String response) {
+    private double getRatingFrom(String response) {
+        if (response == null)
+        {
+            return 0;
+        }
+
         try {
             JSONObject rawResult = new JSONObject(response);
             int resultCount = rawResult.getInt("total");
