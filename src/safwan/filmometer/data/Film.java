@@ -1,10 +1,13 @@
 package safwan.filmometer.data;
 
+import android.graphics.Bitmap;
+
 public class Film {
     private String title;
     private int year;
     private String cast;
     private double rating;
+    private Bitmap poster;
 
     public String getTitle() {
         return title;
@@ -36,5 +39,13 @@ public class Film {
 
     public void setRating(double rating) {
         this.rating = rating;
+    }
+
+    public Bitmap getPoster() {
+        return poster;
+    }
+
+    public void setPoster(Bitmap poster) {
+        this.poster = poster;
     }
 }

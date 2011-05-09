@@ -1,7 +1,7 @@
 <resources>
     <style name="LookupHeader">
-        <item name="android:textSize">20sp</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">15sp</item>
+        <!--<item name="android:textStyle">bold</item>-->
         <item name="android:textColor">?android:attr/textColorPrimary</item>
         <item name="android:gravity">center_horizontal</item>
     </style>

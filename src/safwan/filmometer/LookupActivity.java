@@ -4,16 +4,19 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.TextView;
 import safwan.filmometer.aggregator.RatingAggregator;
 import safwan.filmometer.data.Film;
 
 public class LookupActivity extends Activity {
+    private ImageView mPoster;
     private TextView mHeader;
     private TextView mContent;
     private ProgressDialog mProgressDialog;
@@ -28,6 +31,7 @@ public class LookupActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.lookup);
 
+        mPoster = (ImageView) findViewById(R.id.poster);
         mHeader = (TextView) findViewById(R.id.header);
         mContent = (TextView) findViewById(R.id.content);
 
@@ -73,35 +77,37 @@ public class LookupActivity extends Activity {
         new LookupTask().execute(query);
     }
 
-    /**
-     * Set the header for the current entry. This will update our
-     * header view with the film details.
-     */
-    protected void setHeader(Film summaryInfo) {
-        mHeader.setText(summaryInfo.getTitle() + " | " + summaryInfo.getYear());
+    protected void setPoster(Bitmap poster)
+    {
+        mPoster.setImageBitmap(poster);
     }
 
-    /**
-     * Set the content for the current entry. This will update our
-     * content view to show the requested content.
-     */
-    protected void setEntryContent(String entryContent) {
-        mContent.setText(entryContent);
+    protected void setHeader(Film summaryInfo) {
+        String lineEnding = System.getProperty("line.separator");
+        StringBuffer headerBuffer = new StringBuffer();
+
+        headerBuffer.append(summaryInfo.getTitle());
+        headerBuffer.append(lineEnding);
+        headerBuffer.append(summaryInfo.getYear());
+        headerBuffer.append(lineEnding);
+        headerBuffer.append(summaryInfo.getCast());
+
+        mHeader.setText(headerBuffer.toString());
+    }
+
+    protected void setAverageRating(String averageRating) {
+        mContent.setText(averageRating);
     }
 
     /**
      * Background task to handle movie rating lookups. This correctly shows and
      * hides the {@link ProgressDialog} from the GUI thread before starting a
      * background query to the rating aggregator. When finished, it transitions
-     * back to the GUI thread where it updates with the newly-found entry.
+     * back to the GUI thread where it updates with the average rating and details.
      */
     private class LookupTask extends AsyncTask<String, String, String> {
         private Film summaryInfo = null;
 
-        /**
-         * Before jumping into background thread, start showing the
-         * {@link ProgressDialog}.
-         */
         @Override
         protected void onPreExecute() {
             mProgressDialog = ProgressDialog.show(LookupActivity.this, "", "Searching. Please wait...", true);
@@ -114,7 +120,6 @@ public class LookupActivity extends Activity {
 
             try {
                 if (query != null) {
-                    // Push our requested word to the title bar
                     publishProgress(query);
 
                     summaryInfo = mAggregator.getSummaryInfoFor(query);
@@ -128,22 +133,17 @@ public class LookupActivity extends Activity {
             return averageRating;
         }
 
-        /**
-         * Our progress update pushes a title bar update.
-         */
         @Override
         protected void onProgressUpdate(String... args) {
         }
 
-        /**
-         * When finished, push the newly-found entry content into our
-         * content view and hide the {@link ProgressDialog}.
-         */
         @Override
-        protected void onPostExecute(String parsedText) {
+        protected void onPostExecute(String averageRating) {
             mProgressDialog.hide();
+
+            setPoster(summaryInfo.getPoster());
             setHeader(summaryInfo);
-            setEntryContent(parsedText);
+            setAverageRating(averageRating);
         }
     }
 }

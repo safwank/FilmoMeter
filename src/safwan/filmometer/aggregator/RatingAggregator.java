@@ -6,6 +6,7 @@ import safwan.filmometer.sources.RatingSource;
 import safwan.filmometer.sources.RottenTomatoesSource;
 import safwan.filmometer.sources.TMDBSource;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,9 +17,8 @@ public class RatingAggregator {
 
     public Film getSummaryInfoFor(String film) {
         List<RatingSource> ratingSources = loadAllSources();
-        Film summaryInfo = getSummaryInfoFrom(ratingSources, film);
 
-        return summaryInfo;
+        return getSummaryInfoFrom(ratingSources, film);
     }
 
     private Film getSummaryInfoFrom(List<RatingSource> ratingSources, String film) {
@@ -37,12 +37,13 @@ public class RatingAggregator {
         }
 
         for (Film currentFilm : films) {
-            // Assume the first result is the most authoritative
+            // Assume the first result is the most authoritative, for now :)
             if (summary == null) {
                 summary = new Film();
                 summary.setTitle(currentFilm.getTitle());
                 summary.setYear(currentFilm.getYear());
                 summary.setCast(currentFilm.getCast());
+                summary.setPoster(currentFilm.getPoster());
             }
 
             if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
@@ -52,7 +53,7 @@ public class RatingAggregator {
         }
 
         if (summary != null) {
-            summary.setRating(totalScore / validSourceCount);
+            summary.setRating(roundRating(totalScore / validSourceCount));
         }
 
         return summary;
@@ -78,5 +79,10 @@ public class RatingAggregator {
         ratingSources.add(new TMDBSource());
 
         return ratingSources;
+    }
+
+    private double roundRating(double rating) {
+        DecimalFormat twoDForm = new DecimalFormat("#.#");
+        return Double.valueOf(twoDForm.format(rating));
     }
 }
