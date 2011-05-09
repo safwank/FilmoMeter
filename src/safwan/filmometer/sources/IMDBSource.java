@@ -2,35 +2,46 @@ package safwan.filmometer.sources;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import safwan.filmometer.data.Film;
 import safwan.filmometer.tools.RestClient;
 
 public class IMDBSource implements RatingSource {
 
-    public double getRatingFor(String film) {
+    public Film getInfoFor(String film) {
         RestClient client = new RestClient("http://www.imdbapi.com");
         client.addParam("t", film);
 
         try {
             client.execute(RestClient.RequestMethod.GET);
         } catch (Exception e) {
-            return 0;
+            return null;
         }
 
         String response = client.getResponse();
-        return getRatingFrom(response);
+        return getFilmInfoFrom(response);
     }
 
-    private double getRatingFrom(String response) {
-        if (response == null)
-        {
-            return 0;
+    private Film getFilmInfoFrom(String response) {
+        if (response == null) {
+            return null;
         }
 
         try {
             JSONObject jsonResult = new JSONObject(response);
-            return jsonResult != null ? jsonResult.getDouble("Rating") : 0;
+
+            if (jsonResult != null) {
+                Film film = new Film();
+                film.setTitle(jsonResult.getString("Title"));
+                film.setYear(jsonResult.getInt("Year"));
+                film.setCast(jsonResult.getString("Actors"));
+                film.setRating(jsonResult.getDouble("Rating"));
+
+                return film;
+            }
         } catch (JSONException e) {
-            return 0;
+            return null;
         }
+
+        return null;
     }
 }
