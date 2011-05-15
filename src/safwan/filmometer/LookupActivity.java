@@ -141,8 +141,12 @@ public class LookupActivity extends Activity {
         protected void onPostExecute(String averageRating) {
             mProgressDialog.hide();
 
-            setPoster(summaryInfo.getPoster());
-            setHeader(summaryInfo);
+            if (summaryInfo != null)
+            {
+                setPoster(summaryInfo.getPoster());
+                setHeader(summaryInfo);
+            }
+
             setAverageRating(averageRating);
         }
     }
