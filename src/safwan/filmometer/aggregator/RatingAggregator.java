@@ -10,7 +10,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: Figure out whether the various scores actually correspond to the same film
 public class RatingAggregator {
 
     private List<RatingSource> ratingSources;
@@ -46,6 +45,7 @@ public class RatingAggregator {
                 summary.setPoster(currentFilm.getPoster());
             }
 
+            // Simple logic to determine whether the results from different sources correspond to each other
             if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
                 totalScore += currentFilm.getRating();
                 validSourceCount++;

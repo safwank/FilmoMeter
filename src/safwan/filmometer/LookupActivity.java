@@ -7,9 +7,11 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import safwan.filmometer.aggregator.RatingAggregator;
@@ -36,6 +38,9 @@ public class LookupActivity extends Activity {
         mContent = (TextView) findViewById(R.id.content);
 
         mAggregator = new RatingAggregator();
+
+        displaySearchDialog();
+        enableTypeToSearchFunctionality();
     }
 
     /**
@@ -55,7 +60,7 @@ public class LookupActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.lookup_search: {
-                onSearchRequested();
+                displaySearchDialog();
                 return true;
             }
         }
@@ -77,26 +82,60 @@ public class LookupActivity extends Activity {
         new LookupTask().execute(query);
     }
 
-    protected void setPoster(Bitmap poster)
-    {
+    private void enableTypeToSearchFunctionality() {
+        setDefaultKeyMode(DEFAULT_KEYS_SEARCH_LOCAL);
+    }
+
+    private void displaySearchDialog() {
+        onSearchRequested();
+    }
+
+    private void displayResult(Film summaryInfo) {
+        if (summaryInfo != null) {
+            setPoster(summaryInfo.getPoster());
+            setHeader(summaryInfo);
+            setAverageRating(String.valueOf(summaryInfo.getRating()));
+        } else {
+            displayNoMatchFound();
+        }
+    }
+
+    private void displayNoMatchFound() {
+        setPoster(null);
+        setHeader(null);
+        setAverageRating(null);
+    }
+
+    private void setPoster(Bitmap poster) {
         mPoster.setImageBitmap(poster);
     }
 
-    protected void setHeader(Film summaryInfo) {
-        String lineEnding = System.getProperty("line.separator");
-        StringBuffer headerBuffer = new StringBuffer();
+    private void setHeader(Film summaryInfo) {
+        if (summaryInfo != null) {
+            String lineEnding = System.getProperty("line.separator");
+            StringBuffer headerBuffer = new StringBuffer();
 
-        headerBuffer.append(summaryInfo.getTitle());
-        headerBuffer.append(lineEnding);
-        headerBuffer.append(summaryInfo.getYear());
-        headerBuffer.append(lineEnding);
-        headerBuffer.append(summaryInfo.getCast());
+            //TODO: There should be a better way of doing this
+            headerBuffer.append(summaryInfo.getTitle());
+            headerBuffer.append(lineEnding);
+            headerBuffer.append(summaryInfo.getYear());
+            headerBuffer.append(lineEnding);
+            headerBuffer.append(summaryInfo.getCast());
 
-        mHeader.setText(headerBuffer.toString());
+            mHeader.setText(headerBuffer.toString());
+        } else {
+            mHeader.setText(null);
+        }
     }
 
-    protected void setAverageRating(String averageRating) {
-        mContent.setText(averageRating);
+    private void setAverageRating(String averageRating) {
+        if (averageRating == null) {
+            mContent.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            mContent.setText(getString(R.string.empty_result));
+        } else {
+            mContent.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 60);
+            mContent.setText(averageRating);
+        }
     }
 
     /**
@@ -116,7 +155,6 @@ public class LookupActivity extends Activity {
         @Override
         protected String doInBackground(String... args) {
             String query = args[0];
-            String averageRating;
 
             try {
                 if (query != null) {
@@ -128,26 +166,14 @@ public class LookupActivity extends Activity {
                 e.printStackTrace();
             }
 
-            averageRating = summaryInfo == null ? getString(R.string.empty_result) : String.valueOf(summaryInfo.getRating());
-
-            return averageRating;
-        }
-
-        @Override
-        protected void onProgressUpdate(String... args) {
+            return "";
         }
 
         @Override
         protected void onPostExecute(String averageRating) {
             mProgressDialog.hide();
 
-            if (summaryInfo != null)
-            {
-                setPoster(summaryInfo.getPoster());
-                setHeader(summaryInfo);
-            }
-
-            setAverageRating(averageRating);
+            displayResult(summaryInfo);
         }
     }
 }
