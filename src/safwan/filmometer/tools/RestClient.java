@@ -11,7 +11,6 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
-import sun.net.www.http.HttpClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,8 +21,8 @@ import java.util.ArrayList;
 
 public class RestClient {
 
-    private ArrayList <NameValuePair> params;
-    private ArrayList <NameValuePair> headers;
+    private ArrayList<NameValuePair> params;
+    private ArrayList<NameValuePair> headers;
 
     private String url;
 
@@ -44,41 +43,32 @@ public class RestClient {
         return responseCode;
     }
 
-    public RestClient(String url)
-    {
+    public RestClient(String url) {
         this.url = url;
         params = new ArrayList<NameValuePair>();
         headers = new ArrayList<NameValuePair>();
     }
 
-    public void addParam(String name, String value)
-    {
+    public void addParam(String name, String value) {
         params.add(new BasicNameValuePair(name, value));
     }
 
-    public void addHeader(String name, String value)
-    {
+    public void addHeader(String name, String value) {
         headers.add(new BasicNameValuePair(name, value));
     }
 
-    public void execute(RequestMethod method) throws Exception
-    {
-        switch(method) {
-            case GET:
-            {
+    public void execute(RequestMethod method) throws Exception {
+        switch (method) {
+            case GET: {
                 //add parameters
                 String combinedParams = "";
-                if(!params.isEmpty()){
+                if (!params.isEmpty()) {
                     combinedParams += "?";
-                    for(NameValuePair p : params)
-                    {
+                    for (NameValuePair p : params) {
                         String paramString = p.getName() + "=" + URLEncoder.encode(p.getValue(), "UTF-8");
-                        if(combinedParams.length() > 1)
-                        {
-                            combinedParams  +=  "&" + paramString;
-                        }
-                        else
-                        {
+                        if (combinedParams.length() > 1) {
+                            combinedParams += "&" + paramString;
+                        } else {
                             combinedParams += paramString;
                         }
                     }
@@ -87,25 +77,22 @@ public class RestClient {
                 HttpGet request = new HttpGet(url + combinedParams);
 
                 //add headers
-                for(NameValuePair h : headers)
-                {
+                for (NameValuePair h : headers) {
                     request.addHeader(h.getName(), h.getValue());
                 }
 
                 executeRequest(request, url);
                 break;
             }
-            case POST:
-            {
+            case POST: {
                 HttpPost request = new HttpPost(url);
 
                 //add headers
-                for(NameValuePair h : headers)
-                {
+                for (NameValuePair h : headers) {
                     request.addHeader(h.getName(), h.getValue());
                 }
 
-                if(!params.isEmpty()){
+                if (!params.isEmpty()) {
                     request.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
                 }
 
@@ -115,8 +102,7 @@ public class RestClient {
         }
     }
 
-    private void executeRequest(HttpUriRequest request, String url)
-    {
+    private void executeRequest(HttpUriRequest request, String url) {
         DefaultHttpClient client = new DefaultHttpClient();
 
         HttpResponse httpResponse;
@@ -137,7 +123,7 @@ public class RestClient {
                 instream.close();
             }
 
-        } catch (ClientProtocolException e)  {
+        } catch (ClientProtocolException e) {
             client.getConnectionManager().shutdown();
             e.printStackTrace();
         } catch (IOException e) {
@@ -168,8 +154,7 @@ public class RestClient {
         return sb.toString();
     }
 
-    public enum RequestMethod
-    {
+    public enum RequestMethod {
         GET,
         POST
     }

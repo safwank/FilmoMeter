@@ -45,6 +45,7 @@ public class RatingAggregator {
                 summary.setPoster(currentFilm.getPoster());
             }
 
+            //TODO: Correlate the results. That means we have to return multiple results per source.
             // Simple logic to determine whether the results from different sources correspond to each other
             if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
                 totalScore += currentFilm.getRating();
@@ -52,7 +53,7 @@ public class RatingAggregator {
             }
         }
 
-        if (summary != null) {
+        if (null != summary) {
             summary.setRating(roundRating(totalScore / validSourceCount));
         }
 

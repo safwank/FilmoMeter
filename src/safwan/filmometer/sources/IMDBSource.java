@@ -66,7 +66,6 @@ public class IMDBSource implements RatingSource {
             HttpURLConnection conn = (HttpURLConnection) myImageURL.openConnection();
             conn.setDoInput(true);
             conn.connect();
-            //int length = conn.getContentLength();
             InputStream is = conn.getInputStream();
 
             return BitmapFactory.decodeStream(is);
