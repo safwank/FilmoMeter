@@ -82,17 +82,22 @@ public class RatingAggregator {
         Film summary = null;
 
         for (List<Film> currentFilms : aggregatedFilms) {
-            //Assume the most authoritative source has only a single result
+            /*
+            Assume the most authoritative source has only
+            a single result that includes a poster
+            */
             if (currentFilms.size() == 1) {
                 Film firstResult = currentFilms.get(0);
 
-                summary = new Film();
-                summary.setTitle(firstResult.getTitle());
-                summary.setYear(firstResult.getYear());
-                summary.setCast(firstResult.getCast());
-                summary.setPoster(firstResult.getPoster());
+                if (null != firstResult.getPoster()) {
+                    summary = new Film();
+                    summary.setTitle(firstResult.getTitle());
+                    summary.setYear(firstResult.getYear());
+                    summary.setCast(firstResult.getCast());
+                    summary.setPoster(firstResult.getPoster());
 
-                break;
+                    break;
+                }
             }
         }
         return summary;
