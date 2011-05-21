@@ -21,35 +21,49 @@ public class RatingAggregator {
     }
 
     private Film getSummaryInfoFrom(List<RatingSource> ratingSources, String film) {
-        double totalScore = 0;
-        int validSourceCount = 0;
-        List<Film> films = new ArrayList<Film>();
-        Film summary = null;
+
+        ArrayList<List<Film>> aggregatedFilms = new ArrayList<List<Film>>();
 
         //TODO: Retrieve the ratings asynchronously to speed things up
         for (RatingSource source : ratingSources) {
-            Film currentFilm = source.getInfoFor(film);
+            List<Film> currentFilms = source.getInfoFor(film);
 
-            if (currentFilm != null) {
-                films.add(currentFilm);
+            if (currentFilms != null && currentFilms.size() > 0) {
+                aggregatedFilms.add(currentFilms);
             }
         }
 
-        for (Film currentFilm : films) {
-            // Assume the first result is the most authoritative, for now :)
-            if (summary == null) {
-                summary = new Film();
-                summary.setTitle(currentFilm.getTitle());
-                summary.setYear(currentFilm.getYear());
-                summary.setCast(currentFilm.getCast());
-                summary.setPoster(currentFilm.getPoster());
-            }
+        return CorrelateAndReturnTopResultIn(aggregatedFilms);
+    }
 
-            //TODO: Correlate the results. That means we have to return multiple results per source.
-            // Simple logic to determine whether the results from different sources correspond to each other
-            if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
-                totalScore += currentFilm.getRating();
+    private Film CorrelateAndReturnTopResultIn(ArrayList<List<Film>> aggregatedFilms) {
+        double totalScore = 0;
+        int validSourceCount = 0;
+        Film summary = null;
+
+        for (List<Film> currentFilms : aggregatedFilms) {
+            if (null == summary) {
+                // Assume the first result is the most authoritative, for now :)
+                Film firstResult = currentFilms.get(0);
+
+                summary = new Film();
+                summary.setTitle(firstResult.getTitle());
+                summary.setYear(firstResult.getYear());
+                summary.setCast(firstResult.getCast());
+                summary.setPoster(firstResult.getPoster());
+
+                totalScore += firstResult.getRating();
                 validSourceCount++;
+            } else {
+                // Simple logic to determine whether the results from different sources correspond to each other
+                for (Film currentFilm : currentFilms) {
+                    if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
+                        totalScore += currentFilm.getRating();
+                        validSourceCount++;
+
+                        break;
+                    }
+                }
             }
         }
 

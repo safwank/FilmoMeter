@@ -12,12 +12,22 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IMDBSource implements RatingSource {
 
-    public Film getInfoFor(String film) {
+    public List<Film> getInfoFor(String film) {
+        return getInfoFor(film, 0);
+    }
+
+    public List<Film> getInfoFor(String film, int year) {
         RestClient client = new RestClient("http://www.imdbapi.com");
         client.addParam("t", film);
+
+        if (year > 0) {
+            client.addParam("y", String.valueOf(year));
+        }
 
         try {
             client.execute(RestClient.RequestMethod.GET);
@@ -29,14 +39,16 @@ public class IMDBSource implements RatingSource {
         return getFilmInfoFrom(response);
     }
 
-    private Film getFilmInfoFrom(String response) {
+    private List<Film> getFilmInfoFrom(String response) {
         if (response == null) {
             return null;
         }
 
+        List<Film> films = new ArrayList<Film>();
         Film film = new Film();
 
         try {
+            //Unfortunately the IMDB API only returns a single result
             JSONObject jsonResult = new JSONObject(response);
 
             film.setTitle(jsonResult.getString("Title"));
@@ -44,11 +56,13 @@ public class IMDBSource implements RatingSource {
             film.setCast(jsonResult.getString("Actors"));
             film.setRating(jsonResult.getDouble("Rating"));
             film.setPoster(getPosterImageFrom(jsonResult.getString("Poster")));
+
         } catch (JSONException e) {
             return null;
         }
 
-        return film;
+        films.add(film);
+        return films;
     }
 
     private Bitmap getPosterImageFrom(String imageURL) {

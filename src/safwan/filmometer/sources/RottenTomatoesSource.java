@@ -6,13 +6,20 @@ import org.json.JSONObject;
 import safwan.filmometer.data.Film;
 import safwan.filmometer.tools.RestClient;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RottenTomatoesSource implements RatingSource {
 
-    public Film getInfoFor(String film) {
+    public List<Film> getInfoFor(String film) {
+        return getInfoFor(film, 0);
+    }
+
+    public List<Film> getInfoFor(String film, int year) {
         RestClient client = new RestClient("http://api.rottentomatoes.com/api/public/v1.0/movies.json");
         client.addParam("apikey", "b2x78beenefg6tq3ynr56r4a");
         client.addParam("q", film);
-        client.addParam("page_limit", "1");
+        client.addParam("page_limit", "5");
 
         try {
             client.execute(RestClient.RequestMethod.GET);
@@ -24,34 +31,39 @@ public class RottenTomatoesSource implements RatingSource {
         return getFilmInfoFrom(response);
     }
 
-    private Film getFilmInfoFrom(String response) {
+    private List<Film> getFilmInfoFrom(String response) {
         if (response == null) {
             return null;
         }
+
+        List<Film> films = new ArrayList<Film>();
 
         try {
             JSONObject rawResult = new JSONObject(response);
             int resultCount = rawResult.getInt("total");
 
             if (resultCount > 0) {
-                JSONArray jsonResults = rawResult.getJSONArray("movies");
-                JSONObject firstResult = jsonResults.getJSONObject(0);
+                JSONArray results = rawResult.getJSONArray("movies");
 
-                if (firstResult != null) {
-                    Film film = new Film();
-                    film.setTitle(firstResult.getString("title"));
-                    film.setYear(firstResult.getInt("year"));
-                    film.setCast(getFilmCastFrom(firstResult.getJSONArray("abridged_cast")));
-                    film.setRating(calculateAverageRatingFor(firstResult.getJSONObject("ratings")));
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject currentResult = results.getJSONObject(i);
 
-                    return film;
+                    if (null != currentResult) {
+                        Film film = new Film();
+                        film.setTitle(currentResult.getString("title"));
+                        film.setYear(currentResult.getInt("year"));
+                        film.setCast(getFilmCastFrom(currentResult.getJSONArray("abridged_cast")));
+                        film.setRating(calculateAverageRatingFor(currentResult.getJSONObject("ratings")));
+
+                        films.add(film);
+                    }
                 }
             }
         } catch (JSONException e) {
             return null;
         }
 
-        return null;
+        return films;
     }
 
     private String getFilmCastFrom(JSONArray cast) {

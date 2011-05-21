@@ -19,6 +19,9 @@ import java.io.InputStreamReader;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 
+/*
+ * Based on http://lukencode.com/2010/04/27/calling-web-services-in-android-using-httpclient/
+ */
 public class RestClient {
 
     private ArrayList<NameValuePair> params;
@@ -137,10 +140,10 @@ public class RestClient {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
 
-        String line = null;
+        String line;
         try {
             while ((line = reader.readLine()) != null) {
-                sb.append(line + "\n");
+                sb.append(line).append("\n");
             }
         } catch (IOException e) {
             e.printStackTrace();

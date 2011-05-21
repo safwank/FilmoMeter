@@ -11,8 +11,10 @@ import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 public class TMDBSource implements RatingSource {
 
@@ -22,13 +24,24 @@ public class TMDBSource implements RatingSource {
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     }
 
-    public Film getInfoFor(String film) {
+    public List<Film> getInfoFor(String film) {
+        return getInfoFor(film, 0);
+    }
+
+    public List<Film> getInfoFor(String film, int year) {
         String apiURL;
+        String encodedFilm;
 
         try {
-            apiURL = String.format("http://api.themoviedb.org/2.1/Movie.search/en/json/%s/%s", "8abd8211399f1196bdefef458fc4c5ed", URLEncoder.encode(film, "UTF-8"));
+            encodedFilm = URLEncoder.encode(film, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             return null;
+        }
+
+        if (year > 0) {
+            apiURL = String.format("http://api.themoviedb.org/2.1/Movie.search/en/json/%s/%s+%d", "8abd8211399f1196bdefef458fc4c5ed", encodedFilm, year);
+        } else {
+            apiURL = String.format("http://api.themoviedb.org/2.1/Movie.search/en/json/%s/%s", "8abd8211399f1196bdefef458fc4c5ed", encodedFilm);
         }
 
         RestClient client = new RestClient(apiURL);
@@ -43,24 +56,26 @@ public class TMDBSource implements RatingSource {
         return getFilmInfoFrom(response);
     }
 
-    private Film getFilmInfoFrom(String response) {
+    private List<Film> getFilmInfoFrom(String response) {
         if (null == response) {
             return null;
         }
 
+        List<Film> films = new ArrayList<Film>();
+
         try {
-            JSONArray jsonResults = new JSONArray(response);
+            JSONArray results = new JSONArray(response);
 
-            if (jsonResults.length() > 0) {
-                JSONObject firstResult = jsonResults.getJSONObject(0);
+            for (int i = 0; i < results.length(); i++) {
+                JSONObject currentResult = results.getJSONObject(i);
 
-                if (null != firstResult) {
+                if (null != currentResult) {
                     Film film = new Film();
-                    film.setTitle(firstResult.getString("name"));
-                    film.setYear(parseYearFrom(firstResult.getString("released")));
-                    film.setRating(firstResult.getDouble("rating"));
+                    film.setTitle(currentResult.getString("name"));
+                    film.setYear(parseYearFrom(currentResult.getString("released")));
+                    film.setRating(currentResult.getDouble("rating"));
 
-                    return film;
+                    films.add(film);
                 }
             }
         } catch (JSONException e) {
@@ -69,7 +84,7 @@ public class TMDBSource implements RatingSource {
             return null;
         }
 
-        return null;
+        return films;
     }
 
     private int parseYearFrom(String date) throws ParseException {
