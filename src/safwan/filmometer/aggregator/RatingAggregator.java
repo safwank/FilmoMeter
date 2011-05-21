@@ -20,41 +20,47 @@ public class RatingAggregator {
         return getSummaryInfoFrom(ratingSources, film);
     }
 
-    private Film getSummaryInfoFrom(List<RatingSource> ratingSources, String film) {
+    private Film getSummaryInfoFrom(List<RatingSource> ratingSources, final String film) {
+        final List<List<Film>> aggregatedFilms = new ArrayList<List<Film>>();
+        List<Thread> sourceThreads = new ArrayList<Thread>();
 
-        ArrayList<List<Film>> aggregatedFilms = new ArrayList<List<Film>>();
+        //Retrieve the ratings asynchronously to speed things up
+        for (final RatingSource source : ratingSources) {
+            Thread currentThread = new Thread(new Runnable() {
+                public void run() {
+                    List<Film> currentFilms = source.getInfoFor(film);
 
-        //TODO: Retrieve the ratings asynchronously to speed things up
-        for (RatingSource source : ratingSources) {
-            List<Film> currentFilms = source.getInfoFor(film);
+                    if (currentFilms != null && currentFilms.size() > 0) {
+                        synchronized (aggregatedFilms) {
+                            aggregatedFilms.add(currentFilms);
+                        }
+                    }
+                }
+            });
 
-            if (currentFilms != null && currentFilms.size() > 0) {
-                aggregatedFilms.add(currentFilms);
+            sourceThreads.add(currentThread);
+            currentThread.start();
+        }
+
+        //Ensure all threads are done before moving on
+        for (Thread sourceThread : sourceThreads) {
+            try {
+                sourceThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 
         return CorrelateAndReturnTopResultIn(aggregatedFilms);
     }
 
-    private Film CorrelateAndReturnTopResultIn(ArrayList<List<Film>> aggregatedFilms) {
+    private Film CorrelateAndReturnTopResultIn(List<List<Film>> aggregatedFilms) {
         double totalScore = 0;
         int validSourceCount = 0;
-        Film summary = null;
+        Film summary = GetSummaryFilmFrom(aggregatedFilms);
 
-        for (List<Film> currentFilms : aggregatedFilms) {
-            if (null == summary) {
-                // Assume the first result is the most authoritative, for now :)
-                Film firstResult = currentFilms.get(0);
-
-                summary = new Film();
-                summary.setTitle(firstResult.getTitle());
-                summary.setYear(firstResult.getYear());
-                summary.setCast(firstResult.getCast());
-                summary.setPoster(firstResult.getPoster());
-
-                totalScore += firstResult.getRating();
-                validSourceCount++;
-            } else {
+        if (null != summary) {
+            for (List<Film> currentFilms : aggregatedFilms) {
                 // Simple logic to determine whether the results from different sources correspond to each other
                 for (Film currentFilm : currentFilms) {
                     if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
@@ -65,12 +71,30 @@ public class RatingAggregator {
                     }
                 }
             }
-        }
 
-        if (null != summary) {
             summary.setRating(roundRating(totalScore / validSourceCount));
         }
 
+        return summary;
+    }
+
+    private Film GetSummaryFilmFrom(List<List<Film>> aggregatedFilms) {
+        Film summary = null;
+
+        for (List<Film> currentFilms : aggregatedFilms) {
+            //Assume the most authoritative source has only a single result
+            if (currentFilms.size() == 1) {
+                Film firstResult = currentFilms.get(0);
+
+                summary = new Film();
+                summary.setTitle(firstResult.getTitle());
+                summary.setYear(firstResult.getYear());
+                summary.setCast(firstResult.getCast());
+                summary.setPoster(firstResult.getPoster());
+
+                break;
+            }
+        }
         return summary;
     }
 
