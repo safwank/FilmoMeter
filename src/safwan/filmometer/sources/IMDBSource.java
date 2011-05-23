@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
 import safwan.filmometer.data.Film;
+import safwan.filmometer.data.SourceFilm;
 import safwan.filmometer.tools.RestClient;
 
 import java.io.IOException;
@@ -17,11 +18,11 @@ import java.util.List;
 
 public class IMDBSource implements RatingSource {
 
-    public List<Film> getInfoFor(String film) {
+    public List<SourceFilm> getInfoFor(String film) {
         return getInfoFor(film, 0);
     }
 
-    public List<Film> getInfoFor(String film, int year) {
+    public List<SourceFilm> getInfoFor(String film, int year) {
         RestClient client = new RestClient("http://www.imdbapi.com");
         client.addParam("t", film);
 
@@ -39,13 +40,13 @@ public class IMDBSource implements RatingSource {
         return getFilmInfoFrom(response);
     }
 
-    private List<Film> getFilmInfoFrom(String response) {
+    private List<SourceFilm> getFilmInfoFrom(String response) {
         if (response == null) {
             return null;
         }
 
-        List<Film> films = new ArrayList<Film>();
-        Film film = new Film();
+        List<SourceFilm> films = new ArrayList<SourceFilm>();
+        SourceFilm film = new SourceFilm();
 
         try {
             //Unfortunately the IMDB API only returns a single result
@@ -56,6 +57,7 @@ public class IMDBSource implements RatingSource {
             film.setCast(jsonResult.getString("Actors"));
             film.setRating(jsonResult.getDouble("Rating"));
             film.setPoster(getPosterImageFrom(jsonResult.getString("Poster")));
+            film.setPrimarySource(true);
 
         } catch (JSONException e) {
             return null;
@@ -65,16 +67,15 @@ public class IMDBSource implements RatingSource {
         return films;
     }
 
+    //TODO: Display "Not Found" image if there's no matching poster
     private Bitmap getPosterImageFrom(String imageURL) {
         URL myImageURL = null;
 
         try {
             myImageURL = new URL(imageURL);
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            return null;
         }
-
-        assert myImageURL != null;
 
         try {
             HttpURLConnection conn = (HttpURLConnection) myImageURL.openConnection();

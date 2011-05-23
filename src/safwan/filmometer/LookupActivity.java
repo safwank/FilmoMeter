@@ -5,13 +5,13 @@ import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import safwan.filmometer.aggregator.RatingAggregator;
@@ -107,7 +107,11 @@ public class LookupActivity extends Activity {
     }
 
     private void setPoster(Bitmap poster) {
-        mPoster.setImageBitmap(poster);
+        if (poster != null) {
+            mPoster.setImageBitmap(poster);
+        } else {
+            mPoster.setImageBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.noposter));
+        }
     }
 
     private void setHeader(Film summaryInfo) {
@@ -138,41 +142,41 @@ public class LookupActivity extends Activity {
         }
     }
 
+    private void showProgress() {
+        mProgressDialog = ProgressDialog.show(LookupActivity.this, "", "Searching and aggregating scores. Please wait...", true);
+    }
+
+    private void hideProgress() {
+        mProgressDialog.hide();
+    }
+
     /**
      * Background task to handle movie rating lookups. This correctly shows and
      * hides the {@link ProgressDialog} from the GUI thread before starting a
      * background query to the rating aggregator. When finished, it transitions
      * back to the GUI thread where it updates with the average rating and details.
      */
-    private class LookupTask extends AsyncTask<String, String, String> {
-        private Film summaryInfo = null;
-
+    private class LookupTask extends AsyncTask<String, String, Film> {
         @Override
         protected void onPreExecute() {
-            mProgressDialog = ProgressDialog.show(LookupActivity.this, "", "Searching. Please wait...", true);
+            showProgress();
         }
 
         @Override
-        protected String doInBackground(String... args) {
+        protected Film doInBackground(String... args) {
             String query = args[0];
 
-            try {
-                if (query != null) {
-                    publishProgress(query);
-
-                    summaryInfo = mAggregator.getSummaryInfoFor(query);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (query == null) {
+                return null;
             }
 
-            return "";
+            publishProgress(query);
+            return mAggregator.getSummaryInfoFor(query);
         }
 
         @Override
-        protected void onPostExecute(String averageRating) {
-            mProgressDialog.hide();
-
+        protected void onPostExecute(Film summaryInfo) {
+            hideProgress();
             displayResult(summaryInfo);
         }
     }

@@ -4,6 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import safwan.filmometer.data.Film;
+import safwan.filmometer.data.SourceFilm;
 import safwan.filmometer.tools.RestClient;
 
 import java.util.ArrayList;
@@ -11,11 +12,11 @@ import java.util.List;
 
 public class RottenTomatoesSource implements RatingSource {
 
-    public List<Film> getInfoFor(String film) {
+    public List<SourceFilm> getInfoFor(String film) {
         return getInfoFor(film, 0);
     }
 
-    public List<Film> getInfoFor(String film, int year) {
+    public List<SourceFilm> getInfoFor(String film, int year) {
         RestClient client = new RestClient("http://api.rottentomatoes.com/api/public/v1.0/movies.json");
         client.addParam("apikey", "b2x78beenefg6tq3ynr56r4a");
         client.addParam("q", film);
@@ -31,12 +32,12 @@ public class RottenTomatoesSource implements RatingSource {
         return getFilmInfoFrom(response);
     }
 
-    private List<Film> getFilmInfoFrom(String response) {
+    private List<SourceFilm> getFilmInfoFrom(String response) {
         if (response == null) {
             return null;
         }
 
-        List<Film> films = new ArrayList<Film>();
+        List<SourceFilm> films = new ArrayList<SourceFilm>();
 
         try {
             JSONObject rawResult = new JSONObject(response);
@@ -49,7 +50,7 @@ public class RottenTomatoesSource implements RatingSource {
                     JSONObject currentResult = results.getJSONObject(i);
 
                     if (null != currentResult) {
-                        Film film = new Film();
+                        SourceFilm film = new SourceFilm();
                         film.setTitle(currentResult.getString("title"));
                         film.setYear(currentResult.getInt("year"));
                         film.setCast(getFilmCastFrom(currentResult.getJSONArray("abridged_cast")));

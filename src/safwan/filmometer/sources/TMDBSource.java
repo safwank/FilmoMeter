@@ -4,6 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import safwan.filmometer.data.Film;
+import safwan.filmometer.data.SourceFilm;
 import safwan.filmometer.tools.RestClient;
 
 import java.io.UnsupportedEncodingException;
@@ -24,11 +25,11 @@ public class TMDBSource implements RatingSource {
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     }
 
-    public List<Film> getInfoFor(String film) {
+    public List<SourceFilm> getInfoFor(String film) {
         return getInfoFor(film, 0);
     }
 
-    public List<Film> getInfoFor(String film, int year) {
+    public List<SourceFilm> getInfoFor(String film, int year) {
         String apiURL;
         String encodedFilm;
 
@@ -56,12 +57,12 @@ public class TMDBSource implements RatingSource {
         return getFilmInfoFrom(response);
     }
 
-    private List<Film> getFilmInfoFrom(String response) {
+    private List<SourceFilm> getFilmInfoFrom(String response) {
         if (null == response) {
             return null;
         }
 
-        List<Film> films = new ArrayList<Film>();
+        List<SourceFilm> films = new ArrayList<SourceFilm>();
 
         try {
             JSONArray results = new JSONArray(response);
@@ -70,7 +71,7 @@ public class TMDBSource implements RatingSource {
                 JSONObject currentResult = results.getJSONObject(i);
 
                 if (null != currentResult) {
-                    Film film = new Film();
+                    SourceFilm film = new SourceFilm();
                     film.setTitle(currentResult.getString("name"));
                     film.setYear(parseYearFrom(currentResult.getString("released")));
                     film.setRating(currentResult.getDouble("rating"));

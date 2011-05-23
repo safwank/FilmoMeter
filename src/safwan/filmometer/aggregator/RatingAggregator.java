@@ -1,6 +1,7 @@
 package safwan.filmometer.aggregator;
 
 import safwan.filmometer.data.Film;
+import safwan.filmometer.data.SourceFilm;
 import safwan.filmometer.sources.IMDBSource;
 import safwan.filmometer.sources.RatingSource;
 import safwan.filmometer.sources.RottenTomatoesSource;
@@ -21,16 +22,16 @@ public class RatingAggregator {
     }
 
     private Film getSummaryInfoFrom(List<RatingSource> ratingSources, final String film) {
-        final List<List<Film>> aggregatedFilms = new ArrayList<List<Film>>();
+        final List<List<SourceFilm>> aggregatedFilms = new ArrayList<List<SourceFilm>>();
         List<Thread> sourceThreads = new ArrayList<Thread>();
 
         //Retrieve the ratings asynchronously to speed things up
         for (final RatingSource source : ratingSources) {
             Thread currentThread = new Thread(new Runnable() {
                 public void run() {
-                    List<Film> currentFilms = source.getInfoFor(film);
+                    List<SourceFilm> currentFilms = source.getInfoFor(film);
 
-                    if (currentFilms != null && currentFilms.size() > 0) {
+                    if (currentFilms != null && !currentFilms.isEmpty()) {
                         synchronized (aggregatedFilms) {
                             aggregatedFilms.add(currentFilms);
                         }
@@ -54,15 +55,15 @@ public class RatingAggregator {
         return CorrelateAndReturnTopResultIn(aggregatedFilms);
     }
 
-    private Film CorrelateAndReturnTopResultIn(List<List<Film>> aggregatedFilms) {
+    private Film CorrelateAndReturnTopResultIn(List<List<SourceFilm>> aggregatedFilms) {
         double totalScore = 0;
         int validSourceCount = 0;
         Film summary = GetSummaryFilmFrom(aggregatedFilms);
 
         if (null != summary) {
-            for (List<Film> currentFilms : aggregatedFilms) {
+            for (List<SourceFilm> currentFilms : aggregatedFilms) {
                 // Simple logic to determine whether the results from different sources correspond to each other
-                for (Film currentFilm : currentFilms) {
+                for (SourceFilm currentFilm : currentFilms) {
                     if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
                         totalScore += currentFilm.getRating();
                         validSourceCount++;
@@ -78,18 +79,14 @@ public class RatingAggregator {
         return summary;
     }
 
-    private Film GetSummaryFilmFrom(List<List<Film>> aggregatedFilms) {
+    private Film GetSummaryFilmFrom(List<List<SourceFilm>> aggregatedFilms) {
         Film summary = null;
 
-        for (List<Film> currentFilms : aggregatedFilms) {
-            /*
-            Assume the most authoritative source has only
-            a single result that includes a poster
-            */
-            if (currentFilms.size() == 1) {
-                Film firstResult = currentFilms.get(0);
+        for (List<SourceFilm> currentFilms : aggregatedFilms) {
+           if (!currentFilms.isEmpty()) {
+                SourceFilm firstResult = currentFilms.get(0);
 
-                if (null != firstResult.getPoster()) {
+                if (firstResult.isPrimarySource()) {
                     summary = new Film();
                     summary.setTitle(firstResult.getTitle());
                     summary.setYear(firstResult.getYear());
