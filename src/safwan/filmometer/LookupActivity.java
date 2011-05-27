@@ -3,24 +3,30 @@ package safwan.filmometer;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.ImageView;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.LayoutAnimationController;
+import android.view.animation.TranslateAnimation;
 import android.widget.TextView;
 import safwan.filmometer.aggregator.RatingAggregator;
 import safwan.filmometer.data.Film;
+import safwan.filmometer.views.ScoreMeter;
 
 public class LookupActivity extends Activity {
-    private ImageView mPoster;
+    private ScoreMeter mMeter;
     private TextView mHeader;
-    private TextView mContent;
+    private TextView mDetails;
     private ProgressDialog mProgressDialog;
 
     private RatingAggregator mAggregator;
@@ -33,9 +39,9 @@ public class LookupActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.lookup);
 
-        mPoster = (ImageView) findViewById(R.id.poster);
+        mMeter = (ScoreMeter) findViewById(R.id.meter);
         mHeader = (TextView) findViewById(R.id.header);
-        mContent = (TextView) findViewById(R.id.content);
+        mDetails = (TextView) findViewById(R.id.details);
 
         mAggregator = new RatingAggregator();
 
@@ -93,53 +99,60 @@ public class LookupActivity extends Activity {
     private void displayResult(Film summaryInfo) {
         if (summaryInfo != null) {
             setPoster(summaryInfo.getPoster());
-            setHeader(summaryInfo);
-            setAverageRating(String.valueOf(summaryInfo.getRating()));
+            setHeader(summaryInfo.getTitle());
+            setDetails(summaryInfo);
+            setAverageRating(summaryInfo.getRating() * 10);
         } else {
             displayNoMatchFound();
         }
+
+        refreshMeter();
     }
 
     private void displayNoMatchFound() {
         setPoster(null);
-        setHeader(null);
-        setAverageRating(null);
+        setHeader(getString(R.string.empty_result));
+        setDetails(null);
+        setAverageRating(0);
     }
 
     private void setPoster(Bitmap poster) {
         if (poster != null) {
-            mPoster.setImageBitmap(poster);
+            mMeter.setPoster(getResizedBitmap(poster, 60, 43));
         } else {
-            mPoster.setImageBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.noposter));
+            mMeter.setPoster(BitmapFactory.decodeResource(getResources(), R.drawable.icon));
         }
     }
 
-    private void setHeader(Film summaryInfo) {
+    private void setHeader(String header) {
+        mHeader.setText(header);
+    }
+
+    private void setDetails(Film summaryInfo) {
         if (summaryInfo != null) {
             String lineEnding = System.getProperty("line.separator");
             StringBuffer headerBuffer = new StringBuffer();
 
-            //TODO: There should be a better way of doing this
-            headerBuffer.append(summaryInfo.getTitle());
-            headerBuffer.append(lineEnding);
             headerBuffer.append(summaryInfo.getYear());
             headerBuffer.append(lineEnding);
             headerBuffer.append(summaryInfo.getCast());
 
-            mHeader.setText(headerBuffer.toString());
+            mDetails.setText(headerBuffer.toString());
         } else {
-            mHeader.setText(null);
+            mDetails.setText(null);
         }
     }
 
-    private void setAverageRating(String averageRating) {
-        if (averageRating == null) {
-            mContent.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            mContent.setText(getString(R.string.empty_result));
+    private void setAverageRating(double averageRating) {
+        if (averageRating == 0) {
+            mMeter.setScore(0);
         } else {
-            mContent.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 60);
-            mContent.setText(averageRating);
+            mMeter.setScore((float) averageRating);
         }
+    }
+
+    private void refreshMeter() {
+        mMeter.refresh();
     }
 
     private void showProgress() {
@@ -180,4 +193,93 @@ public class LookupActivity extends Activity {
             displayResult(summaryInfo);
         }
     }
+
+    public void setLayoutAnim_slidedown(ViewGroup panel, Context ctx) {
+
+        AnimationSet set = new AnimationSet(true);
+
+        Animation animation = new TranslateAnimation(
+                Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF,
+                0.0f, Animation.RELATIVE_TO_SELF, -1.0f,
+                Animation.RELATIVE_TO_SELF, 0.0f);
+        animation.setDuration(800);
+        animation.setAnimationListener(new Animation.AnimationListener() {
+
+            public void onAnimationStart(Animation animation) {
+                // TODO Auto-generated method stub
+                // MapContacts.this.mapviewgroup.setVisibility(View.VISIBLE);
+
+            }
+
+            public void onAnimationRepeat(Animation animation) {
+                // TODO Auto-generated method stub
+
+            }
+
+            public void onAnimationEnd(Animation animation) {
+
+                // TODO Auto-generated method stub
+
+            }
+        });
+        set.addAnimation(animation);
+
+        LayoutAnimationController controller = new LayoutAnimationController(
+                set, 0.25f);
+        panel.setLayoutAnimation(controller);
+    }
+
+    public void setLayoutAnim_slideup(ViewGroup panel, Context ctx) {
+
+        AnimationSet set = new AnimationSet(true);
+
+        /*
+           * Animation animation = new AlphaAnimation(1.0f, 0.0f);
+           * animation.setDuration(200); set.addAnimation(animation);
+           */
+
+        Animation animation = new TranslateAnimation(
+                Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF,
+                0.0f, Animation.RELATIVE_TO_SELF, 0.0f,
+                Animation.RELATIVE_TO_SELF, -1.0f);
+        animation.setDuration(800);
+        animation.setAnimationListener(new Animation.AnimationListener() {
+
+            public void onAnimationStart(Animation animation) {
+                // TODO Auto-generated method stub
+
+            }
+
+            public void onAnimationRepeat(Animation animation) {
+                // TODO Auto-generated method stub
+
+            }
+
+            public void onAnimationEnd(Animation animation) {
+                // MapContacts.this.mapviewgroup.setVisibility(View.INVISIBLE);
+                // TODO Auto-generated method stub
+
+            }
+        });
+        set.addAnimation(animation);
+
+        LayoutAnimationController controller = new LayoutAnimationController(
+                set, 0.25f);
+        panel.setLayoutAnimation(controller);
+    }
+
+    //TODO: This should be moved to a helper class
+    public Bitmap getResizedBitmap(Bitmap bm, int newHeight, int newWidth) {
+        int width = bm.getWidth();
+        int height = bm.getHeight();
+
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleWidth, scaleHeight);
+
+        return Bitmap.createBitmap(bm, 0, 0, width, height, matrix, false);
+    }
+
 }

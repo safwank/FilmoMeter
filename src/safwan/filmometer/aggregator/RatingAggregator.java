@@ -15,10 +15,10 @@ public class RatingAggregator {
 
     private List<RatingSource> ratingSources;
 
-    public Film getSummaryInfoFor(String film) {
+    public Film getSummaryInfoFor(String keyword) {
         List<RatingSource> ratingSources = loadAllSources();
 
-        return getSummaryInfoFrom(ratingSources, film);
+        return getSummaryInfoFrom(ratingSources, keyword);
     }
 
     private Film getSummaryInfoFrom(List<RatingSource> ratingSources, final String film) {
