@@ -1,3 +1,7 @@
+/*
+Based on http://mindtherobot.com/blog/272/android-custom-ui-making-a-vintage-thermometer/
+ */
+
 package safwan.filmometer.views;
 
 import android.content.Context;

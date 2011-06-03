@@ -10,6 +10,8 @@ import safwan.filmometer.sources.TMDBSource;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class RatingAggregator {
 
@@ -21,15 +23,15 @@ public class RatingAggregator {
         return getSummaryInfoFrom(ratingSources, keyword);
     }
 
-    private Film getSummaryInfoFrom(List<RatingSource> ratingSources, final String film) {
+    private Film getSummaryInfoFrom(List<RatingSource> ratingSources, final String keyword) {
         final List<List<SourceFilm>> aggregatedFilms = new ArrayList<List<SourceFilm>>();
-        List<Thread> sourceThreads = new ArrayList<Thread>();
+        final List<Thread> sourceThreads = new ArrayList<Thread>();
 
         //Retrieve the ratings asynchronously to speed things up
         for (final RatingSource source : ratingSources) {
-            Thread currentThread = new Thread(new Runnable() {
+            final Thread currentThread = new Thread(new Runnable() {
                 public void run() {
-                    List<SourceFilm> currentFilms = source.getInfoFor(film);
+                    List<SourceFilm> currentFilms = getCurrentFilmsFor(source, keyword);
 
                     if (currentFilms != null && !currentFilms.isEmpty()) {
                         synchronized (aggregatedFilms) {
@@ -52,13 +54,32 @@ public class RatingAggregator {
             }
         }
 
-        return CorrelateAndReturnTopResultIn(aggregatedFilms);
+        return correlateAndReturnTopResultIn(aggregatedFilms);
     }
 
-    private Film CorrelateAndReturnTopResultIn(List<List<SourceFilm>> aggregatedFilms) {
+    private List<SourceFilm> getCurrentFilmsFor(RatingSource source, String keyword) {
+        Matcher matcher = getTitleAndYearMatcherFor(keyword);
+
+        if (matcher.find()) {
+            return source.getInfoFor(matcher.group(1), Integer.valueOf(matcher.group(3)));
+        }
+
+        return source.getInfoFor(keyword);
+    }
+
+    private Matcher getTitleAndYearMatcherFor(String keyword) {
+        String alphanumericExpression = "((?:[a-z][a-z]*[0-9]+[a-z0-9]*))";
+        String commaExpression = "(,)";
+        String yearExpression = "((?:(?:[1]{1}\\d{1}\\d{1}\\d{1})|(?:[2]{1}\\d{3})))(?![\\d])";
+
+        Pattern p = Pattern.compile(alphanumericExpression + commaExpression + yearExpression, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        return p.matcher(keyword);
+    }
+
+    private Film correlateAndReturnTopResultIn(List<List<SourceFilm>> aggregatedFilms) {
         double totalScore = 0;
         int validSourceCount = 0;
-        Film summary = GetSummaryFilmFrom(aggregatedFilms);
+        Film summary = getSummaryFilmFrom(aggregatedFilms);
 
         if (null != summary) {
             for (List<SourceFilm> currentFilms : aggregatedFilms) {
@@ -79,11 +100,11 @@ public class RatingAggregator {
         return summary;
     }
 
-    private Film GetSummaryFilmFrom(List<List<SourceFilm>> aggregatedFilms) {
+    private Film getSummaryFilmFrom(List<List<SourceFilm>> aggregatedFilms) {
         Film summary = null;
 
         for (List<SourceFilm> currentFilms : aggregatedFilms) {
-           if (!currentFilms.isEmpty()) {
+            if (!currentFilms.isEmpty()) {
                 SourceFilm firstResult = currentFilms.get(0);
 
                 if (firstResult.isPrimarySource()) {

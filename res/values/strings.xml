@@ -3,7 +3,7 @@
     <string name="app_name">FilmoMeter</string>
 
     <string name="search_label">FilmoMeter search</string>
-    <string name="search_hint">Search film and year (optional)</string>
+    <string name="search_hint">Film, year</string>
 
     <string name="lookup_search">Search</string>
 
