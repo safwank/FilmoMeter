@@ -12,6 +12,8 @@ import java.util.List;
 
 public class RottenTomatoesSource implements RatingSource {
 
+    private static final String SOURCE_DESCRIPTION = "Rotten Tomatoes";
+
     public List<SourceFilm> getInfoFor(String film) {
         return getInfoFor(film, 0);
     }
@@ -51,6 +53,7 @@ public class RottenTomatoesSource implements RatingSource {
 
                     if (null != currentResult) {
                         SourceFilm film = new SourceFilm();
+                        film.setSourceDescription(SOURCE_DESCRIPTION);
                         film.setTitle(currentResult.getString("title"));
                         film.setYear(currentResult.getInt("year"));
                         film.setCast(getFilmCastFrom(currentResult.getJSONArray("abridged_cast")));
@@ -98,6 +101,6 @@ public class RottenTomatoesSource implements RatingSource {
             e.printStackTrace();
         }
 
-        return totalScore / ratings.length() / 10;
+        return totalScore / 2 / 10;
     }
 }

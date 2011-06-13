@@ -86,8 +86,12 @@ public class RatingAggregator {
                 // Simple logic to determine whether the results from different sources correspond to each other
                 for (SourceFilm currentFilm : currentFilms) {
                     if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
-                        totalScore += currentFilm.getRating();
+                        double currentRating = currentFilm.getRating();
+
+                        totalScore += currentRating;
                         validSourceCount++;
+
+                        summary.addScore(currentFilm.getSourceDescription(), currentRating);
 
                         break;
                     }

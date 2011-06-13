@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
-import safwan.filmometer.data.Film;
 import safwan.filmometer.data.SourceFilm;
 import safwan.filmometer.tools.RestClient;
 
@@ -17,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IMDBSource implements RatingSource {
+
+    private static final String SOURCE_DESCRIPTION = "IMDB";
 
     public List<SourceFilm> getInfoFor(String film) {
         return getInfoFor(film, 0);
@@ -52,6 +53,7 @@ public class IMDBSource implements RatingSource {
             //Unfortunately the IMDB API only returns a single result
             JSONObject jsonResult = new JSONObject(response);
 
+            film.setSourceDescription(SOURCE_DESCRIPTION);
             film.setTitle(jsonResult.getString("Title"));
             film.setYear(jsonResult.getInt("Year"));
             film.setCast(jsonResult.getString("Actors"));
@@ -67,7 +69,6 @@ public class IMDBSource implements RatingSource {
         return films;
     }
 
-    //TODO: Display "Not Found" image if there's no matching poster
     private Bitmap getPosterImageFrom(String imageURL) {
         URL myImageURL = null;
 

@@ -3,6 +3,7 @@ package safwan.filmometer;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
+import android.app.TabActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -10,24 +11,28 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.ViewGroup;
+import android.view.*;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.LayoutAnimationController;
 import android.view.animation.TranslateAnimation;
+import android.widget.LinearLayout;
+import android.widget.TabHost;
 import android.widget.TextView;
 import safwan.filmometer.aggregator.RatingAggregator;
 import safwan.filmometer.data.Film;
 import safwan.filmometer.views.ScoreMeter;
 
-public class LookupActivity extends Activity {
-    private ScoreMeter mMeter;
+import java.util.Enumeration;
+import java.util.Hashtable;
+
+public class LookupActivity extends TabActivity {
+    private TabHost mTabHost;
     private TextView mHeader;
     private TextView mDetails;
     private ProgressDialog mProgressDialog;
+    private ScoreMeter mAverageMeter;
+    private LinearLayout mMeterList;
 
     private RatingAggregator mAggregator;
 
@@ -39,9 +44,18 @@ public class LookupActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.lookup);
 
-        mMeter = (ScoreMeter) findViewById(R.id.meter);
+        mMeterList = (LinearLayout) findViewById(R.id.meters);
         mHeader = (TextView) findViewById(R.id.header);
         mDetails = (TextView) findViewById(R.id.details);
+
+        mAverageMeter = (ScoreMeter) findViewById(R.id.averageMeter);
+
+        mTabHost = getTabHost();
+
+        mTabHost.addTab(mTabHost.newTabSpec("tab_test1").setIndicator("Summary").setContent(R.id.summary));
+        mTabHost.addTab(mTabHost.newTabSpec("tab_test2").setIndicator("Scores").setContent(R.id.meters));
+
+        mTabHost.setCurrentTab(0);
 
         mAggregator = new RatingAggregator();
 
@@ -88,25 +102,50 @@ public class LookupActivity extends Activity {
         new LookupTask().execute(query);
     }
 
-    private void enableTypeToSearchFunctionality() {
-        setDefaultKeyMode(DEFAULT_KEYS_SEARCH_LOCAL);
-    }
-
     private void displaySearchDialog() {
         onSearchRequested();
     }
 
     private void displayResult(Film summaryInfo) {
         if (summaryInfo != null) {
-            setPoster(summaryInfo.getPoster());
-            setHeader(summaryInfo.getTitle());
-            setDetails(summaryInfo);
-            setAverageRating(summaryInfo.getRating() * 10);
+            displaySummary(summaryInfo);
+            displayAllScores(summaryInfo);
         } else {
             displayNoMatchFound();
         }
+    }
 
-        refreshMeter();
+    private void enableTypeToSearchFunctionality() {
+        setDefaultKeyMode(DEFAULT_KEYS_SEARCH_LOCAL);
+    }
+
+    private void displaySummary(Film summaryInfo) {
+        setPoster(summaryInfo.getPoster());
+        setHeader(summaryInfo.getTitle());
+        setDetails(summaryInfo);
+        setAverageRating(summaryInfo.getRating() * 10);
+    }
+
+    private void displayAllScores(Film summaryInfo) {
+        mMeterList.removeAllViews();
+
+        Hashtable<String, Double> allScores = summaryInfo.getAllScores();
+        Enumeration<String> scoreEnumeration = allScores.keys();
+
+        while (scoreEnumeration.hasMoreElements()) {
+            String source = scoreEnumeration.nextElement();
+            double score = allScores.get(source) * 10;
+
+            ScoreMeter meter = new ScoreMeter(this);
+            meter.setLayoutParams(new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            meter.setScore((float) score);
+            meter.setTitle(source);
+            meter.refresh();
+
+            mMeterList.addView(meter);
+        }
     }
 
     private void displayNoMatchFound() {
@@ -114,13 +153,15 @@ public class LookupActivity extends Activity {
         setHeader(getString(R.string.empty_result));
         setDetails(null);
         setAverageRating(0);
+
+        mMeterList.removeAllViews();
     }
 
     private void setPoster(Bitmap poster) {
         if (poster != null) {
-            mMeter.setPoster(getResizedBitmap(poster, 60, 43));
+            mAverageMeter.setPoster(getResizedBitmap(poster, 60, 43));
         } else {
-            mMeter.setPoster(BitmapFactory.decodeResource(getResources(), R.drawable.icon));
+            mAverageMeter.setPoster(BitmapFactory.decodeResource(getResources(), R.drawable.icon));
         }
     }
 
@@ -145,14 +186,12 @@ public class LookupActivity extends Activity {
 
     private void setAverageRating(double averageRating) {
         if (averageRating == 0) {
-            mMeter.setScore(0);
+            mAverageMeter.setScore(0);
         } else {
-            mMeter.setScore((float) averageRating);
+            mAverageMeter.setScore((float) averageRating);
         }
-    }
 
-    private void refreshMeter() {
-        mMeter.refresh();
+        mAverageMeter.refresh();
     }
 
     private void showProgress() {
@@ -194,80 +233,6 @@ public class LookupActivity extends Activity {
         }
     }
 
-    public void setLayoutAnim_slidedown(ViewGroup panel, Context ctx) {
-
-        AnimationSet set = new AnimationSet(true);
-
-        Animation animation = new TranslateAnimation(
-                Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF,
-                0.0f, Animation.RELATIVE_TO_SELF, -1.0f,
-                Animation.RELATIVE_TO_SELF, 0.0f);
-        animation.setDuration(800);
-        animation.setAnimationListener(new Animation.AnimationListener() {
-
-            public void onAnimationStart(Animation animation) {
-                // TODO Auto-generated method stub
-                // MapContacts.this.mapviewgroup.setVisibility(View.VISIBLE);
-
-            }
-
-            public void onAnimationRepeat(Animation animation) {
-                // TODO Auto-generated method stub
-
-            }
-
-            public void onAnimationEnd(Animation animation) {
-
-                // TODO Auto-generated method stub
-
-            }
-        });
-        set.addAnimation(animation);
-
-        LayoutAnimationController controller = new LayoutAnimationController(
-                set, 0.25f);
-        panel.setLayoutAnimation(controller);
-    }
-
-    public void setLayoutAnim_slideup(ViewGroup panel, Context ctx) {
-
-        AnimationSet set = new AnimationSet(true);
-
-        /*
-           * Animation animation = new AlphaAnimation(1.0f, 0.0f);
-           * animation.setDuration(200); set.addAnimation(animation);
-           */
-
-        Animation animation = new TranslateAnimation(
-                Animation.RELATIVE_TO_SELF, 0.0f, Animation.RELATIVE_TO_SELF,
-                0.0f, Animation.RELATIVE_TO_SELF, 0.0f,
-                Animation.RELATIVE_TO_SELF, -1.0f);
-        animation.setDuration(800);
-        animation.setAnimationListener(new Animation.AnimationListener() {
-
-            public void onAnimationStart(Animation animation) {
-                // TODO Auto-generated method stub
-
-            }
-
-            public void onAnimationRepeat(Animation animation) {
-                // TODO Auto-generated method stub
-
-            }
-
-            public void onAnimationEnd(Animation animation) {
-                // MapContacts.this.mapviewgroup.setVisibility(View.INVISIBLE);
-                // TODO Auto-generated method stub
-
-            }
-        });
-        set.addAnimation(animation);
-
-        LayoutAnimationController controller = new LayoutAnimationController(
-                set, 0.25f);
-        panel.setLayoutAnimation(controller);
-    }
-
     //TODO: This should be moved to a helper class
     public Bitmap getResizedBitmap(Bitmap bm, int newHeight, int newWidth) {
         int width = bm.getWidth();
@@ -281,5 +246,4 @@ public class LookupActivity extends Activity {
 
         return Bitmap.createBitmap(bm, 0, 0, width, height, matrix, false);
     }
-
 }

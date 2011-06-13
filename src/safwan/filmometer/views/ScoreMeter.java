@@ -1,7 +1,3 @@
-/*
-Based on http://mindtherobot.com/blog/272/android-custom-ui-making-a-vintage-thermometer/
- */
-
 package safwan.filmometer.views;
 
 import android.content.Context;
@@ -48,6 +44,7 @@ public final class ScoreMeter extends View {
     // end drawing tools
 
     private Bitmap background; // holds the cached static part
+    private String title = "";
 
     // scale configuration
     private static final int totalNicks = 100;
@@ -82,12 +79,10 @@ public final class ScoreMeter extends View {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        //attachToSensor();
     }
 
     @Override
     protected void onDetachedFromWindow() {
-        //detachFromSensor();
         super.onDetachedFromWindow();
     }
 
@@ -127,7 +122,7 @@ public final class ScoreMeter extends View {
     }
 
     private String getTitle() {
-        return "FilmoMeter";
+        return title;
     }
 
     private void initDrawingTools() {
@@ -449,6 +444,12 @@ public final class ScoreMeter extends View {
         }
         handTarget = score;
         handInitialized = true;
+    }
+
+    public void setTitle(String title)
+    {
+        this.title = title;
+        //regenerateBackground();
     }
 
     public void refresh()

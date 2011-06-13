@@ -20,6 +20,7 @@ import java.util.List;
 public class TMDBSource implements RatingSource {
 
     private DateFormat dateFormat;
+    private static final String SOURCE_DESCRIPTION = "TMDB";
 
     public TMDBSource() {
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -72,6 +73,7 @@ public class TMDBSource implements RatingSource {
 
                 if (null != currentResult) {
                     SourceFilm film = new SourceFilm();
+                    film.setSourceDescription(SOURCE_DESCRIPTION);
                     film.setTitle(currentResult.getString("name"));
                     film.setYear(parseYearFrom(currentResult.getString("released")));
                     film.setRating(currentResult.getDouble("rating"));

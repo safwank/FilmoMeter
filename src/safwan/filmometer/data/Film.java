@@ -2,12 +2,20 @@ package safwan.filmometer.data;
 
 import android.graphics.Bitmap;
 
+import java.util.Hashtable;
+
 public class Film {
     private String title;
     private int year;
     private String cast;
     private double rating;
     private Bitmap poster;
+    private Hashtable<String, Double> allScores;
+
+    public Film()
+    {
+        allScores = new Hashtable<String, Double>();
+    }
 
     public String getTitle() {
         return title;
@@ -47,5 +55,14 @@ public class Film {
 
     public void setPoster(Bitmap poster) {
         this.poster = poster;
+    }
+
+    public Hashtable<String, Double> getAllScores() {
+        return allScores;
+    }
+
+    public void addScore(String sourceDescription, double score)
+    {
+        allScores.put(sourceDescription, score);
     }
 }
