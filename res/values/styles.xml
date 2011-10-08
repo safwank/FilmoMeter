@@ -1,13 +1,13 @@
 <resources>
     <style name="LookupHeader">
-        <item name="android:textSize">20dp</item>
+        <item name="android:textSize">15dp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">?android:attr/textColorPrimary</item>
         <item name="android:gravity">center_horizontal</item>
     </style>
     <style name="LookupDetails">
-        <item name="android:textSize">15dp</item>
+        <item name="android:textSize">10dp</item>
         <item name="android:textColor">?android:attr/textColorPrimary</item>
-        <item name="android:gravity">center</item>
+        <item name="android:gravity">top</item>
     </style>
 </resources>

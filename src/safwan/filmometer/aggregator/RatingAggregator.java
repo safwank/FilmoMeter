@@ -1,7 +1,7 @@
 package safwan.filmometer.aggregator;
 
 import safwan.filmometer.data.Film;
-import safwan.filmometer.data.SourceFilm;
+import safwan.filmometer.data.FilmFromSource;
 import safwan.filmometer.sources.IMDBSource;
 import safwan.filmometer.sources.RatingSource;
 import safwan.filmometer.sources.RottenTomatoesSource;
@@ -19,20 +19,22 @@ public class RatingAggregator {
 
     public Film getSummaryInfoFor(String keyword) {
         List<RatingSource> ratingSources = loadAllSources();
-
         return getSummaryInfoFrom(ratingSources, keyword);
     }
 
     private Film getSummaryInfoFrom(List<RatingSource> ratingSources, final String keyword) {
-        final List<List<SourceFilm>> aggregatedFilms = new ArrayList<List<SourceFilm>>();
+        final List<List<FilmFromSource>> aggregatedRatings = retrieveAggregatedRatingsAsyncFrom(ratingSources, keyword);
+        return correlateRatingsAndReturnSummary(aggregatedRatings);
+    }
+
+    private List<List<FilmFromSource>> retrieveAggregatedRatingsAsyncFrom(List<RatingSource> ratingSources, final String keyword) {
+        final List<List<FilmFromSource>> aggregatedFilms = new ArrayList<List<FilmFromSource>>();
         final List<Thread> sourceThreads = new ArrayList<Thread>();
 
-        //Retrieve the ratings asynchronously to speed things up
         for (final RatingSource source : ratingSources) {
-            final Thread currentThread = new Thread(new Runnable() {
+            final Thread sourceThread = new Thread(new Runnable() {
                 public void run() {
-                    List<SourceFilm> currentFilms = getCurrentFilmsFor(source, keyword);
-
+                    List<FilmFromSource> currentFilms = getCurrentFilmsFor(source, keyword);
                     if (currentFilms != null && !currentFilms.isEmpty()) {
                         synchronized (aggregatedFilms) {
                             aggregatedFilms.add(currentFilms);
@@ -40,12 +42,25 @@ public class RatingAggregator {
                     }
                 }
             });
-
-            sourceThreads.add(currentThread);
-            currentThread.start();
+            sourceThreads.add(sourceThread);
+            sourceThread.start();
         }
 
-        //Ensure all threads are done before moving on
+        waitForAllThreadsToComplete(sourceThreads);
+        return aggregatedFilms;
+    }
+
+    private List<FilmFromSource> getCurrentFilmsFor(RatingSource ratingSource, String keyword) {
+        Matcher matcher = getTitleAndYearMatcherFor(keyword);
+        if (matcher.find()) {
+            String title = matcher.group(1);
+            Integer year = Integer.valueOf(matcher.group(3));
+            return ratingSource.getMatchingResultsFor(title, year);
+        }
+        return ratingSource.getMatchingResultsFor(keyword);
+    }
+
+    private void waitForAllThreadsToComplete(List<Thread> sourceThreads) {
         for (Thread sourceThread : sourceThreads) {
             try {
                 sourceThread.join();
@@ -53,18 +68,6 @@ public class RatingAggregator {
                 e.printStackTrace();
             }
         }
-
-        return correlateAndReturnTopResultIn(aggregatedFilms);
-    }
-
-    private List<SourceFilm> getCurrentFilmsFor(RatingSource source, String keyword) {
-        Matcher matcher = getTitleAndYearMatcherFor(keyword);
-
-        if (matcher.find()) {
-            return source.getInfoFor(matcher.group(1), Integer.valueOf(matcher.group(3)));
-        }
-
-        return source.getInfoFor(keyword);
     }
 
     private Matcher getTitleAndYearMatcherFor(String keyword) {
@@ -76,53 +79,59 @@ public class RatingAggregator {
         return p.matcher(keyword);
     }
 
-    private Film correlateAndReturnTopResultIn(List<List<SourceFilm>> aggregatedFilms) {
-        double totalScore = 0;
-        int validSourceCount = 0;
+    private Film correlateRatingsAndReturnSummary(List<List<FilmFromSource>> aggregatedFilms) {
         Film summary = getSummaryFilmFrom(aggregatedFilms);
-
         if (null != summary) {
-            for (List<SourceFilm> currentFilms : aggregatedFilms) {
-                // Simple logic to determine whether the results from different sources correspond to each other
-                for (SourceFilm currentFilm : currentFilms) {
-                    if (summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear()) {
-                        double currentRating = currentFilm.getRating();
-
-                        totalScore += currentRating;
-                        validSourceCount++;
-
-                        summary.addScore(currentFilm.getSourceDescription(), currentRating);
-
-                        break;
-                    }
-                }
-            }
-
-            summary.setRating(roundRating(totalScore / validSourceCount));
+            calculateAndAssignAverageScoreBasedOnCorrelation(aggregatedFilms, summary);
         }
-
         return summary;
     }
 
-    private Film getSummaryFilmFrom(List<List<SourceFilm>> aggregatedFilms) {
+    private Film getSummaryFilmFrom(List<List<FilmFromSource>> aggregatedFilms) {
         Film summary = null;
-
-        for (List<SourceFilm> currentFilms : aggregatedFilms) {
+        for (List<FilmFromSource> currentFilms : aggregatedFilms) {
             if (!currentFilms.isEmpty()) {
-                SourceFilm firstResult = currentFilms.get(0);
-
+                FilmFromSource firstResult = currentFilms.get(0);
                 if (firstResult.isPrimarySource()) {
-                    summary = new Film();
-                    summary.setTitle(firstResult.getTitle());
-                    summary.setYear(firstResult.getYear());
-                    summary.setCast(firstResult.getCast());
-                    summary.setPoster(firstResult.getPoster());
-
+                    summary = createSummaryFrom(firstResult);
                     break;
                 }
             }
         }
         return summary;
+    }
+
+    private void calculateAndAssignAverageScoreBasedOnCorrelation(List<List<FilmFromSource>> aggregatedFilms, Film summary) {
+        double totalScore = 0;
+        int validSourceCount = 0;
+
+        for (List<FilmFromSource> currentFilms : aggregatedFilms) {
+            for (FilmFromSource currentFilm : currentFilms) {
+                if (summaryMatchesCurrentFilm(summary, currentFilm)) {
+                    double currentRating = currentFilm.getRating();
+                    totalScore += currentFilm.getRating();
+                    summary.addScore(currentFilm.getSourceDescription(), currentRating);
+                    validSourceCount++;
+                    break;
+                }
+            }
+        }
+
+        double roundedRating = roundRating(totalScore / validSourceCount);
+        summary.setRating(roundedRating);
+    }
+
+    private boolean summaryMatchesCurrentFilm(Film summary, FilmFromSource currentFilm) {
+        return summary.getTitle().equals(currentFilm.getTitle()) && summary.getYear() == currentFilm.getYear();
+    }
+
+    private Film createSummaryFrom(FilmFromSource firstResult) {
+        Film filmSummary = new Film();
+        filmSummary.setTitle(firstResult.getTitle());
+        filmSummary.setYear(firstResult.getYear());
+        filmSummary.setCast(firstResult.getCast());
+        filmSummary.setPoster(firstResult.getPoster());
+        return filmSummary;
     }
 
     private List<RatingSource> loadAllSources() {
@@ -143,10 +152,10 @@ public class RatingAggregator {
         ratingSources.add(new IMDBSource());
         ratingSources.add(new RottenTomatoesSource());
         ratingSources.add(new TMDBSource());
-
         return ratingSources;
     }
 
+    //TODO: Move this to a helper class
     private double roundRating(double rating) {
         DecimalFormat twoDForm = new DecimalFormat("#.#");
         return Double.valueOf(twoDForm.format(rating));

@@ -1,6 +1,6 @@
 package safwan.filmometer.data;
 
-public class SourceFilm extends Film {
+public class FilmFromSource extends Film {
     private boolean isPrimarySource;
     private String sourceDescription;
 

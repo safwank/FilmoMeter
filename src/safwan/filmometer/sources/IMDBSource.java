@@ -4,7 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
-import safwan.filmometer.data.SourceFilm;
+import safwan.filmometer.data.FilmFromSource;
 import safwan.filmometer.tools.RestClient;
 
 import java.io.IOException;
@@ -19,17 +19,12 @@ public class IMDBSource implements RatingSource {
 
     private static final String SOURCE_DESCRIPTION = "IMDB";
 
-    public List<SourceFilm> getInfoFor(String film) {
-        return getInfoFor(film, 0);
+    public List<FilmFromSource> getMatchingResultsFor(String film) {
+        return getMatchingResultsFor(film, 0);
     }
 
-    public List<SourceFilm> getInfoFor(String film, int year) {
-        RestClient client = new RestClient("http://www.imdbapi.com");
-        client.addParam("t", film);
-
-        if (year > 0) {
-            client.addParam("y", String.valueOf(year));
-        }
+    public List<FilmFromSource> getMatchingResultsFor(String film, int year) {
+        RestClient client = constructRestClient(film, year);
 
         try {
             client.execute(RestClient.RequestMethod.GET);
@@ -41,26 +36,27 @@ public class IMDBSource implements RatingSource {
         return getFilmInfoFrom(response);
     }
 
-    private List<SourceFilm> getFilmInfoFrom(String response) {
+    private RestClient constructRestClient(String film, int year) {
+        RestClient client = new RestClient("http://www.imdbapi.com");
+        client.addParam("t", film);
+
+        if (year > 0) {
+            client.addParam("y", String.valueOf(year));
+        }
+        return client;
+    }
+
+    private List<FilmFromSource> getFilmInfoFrom(String response) {
         if (response == null) {
             return null;
         }
 
-        List<SourceFilm> films = new ArrayList<SourceFilm>();
-        SourceFilm film = new SourceFilm();
+        List<FilmFromSource> films = new ArrayList<FilmFromSource>();
+        FilmFromSource film;
 
         try {
-            //Unfortunately the IMDB API only returns a single result
             JSONObject jsonResult = new JSONObject(response);
-
-            film.setSourceDescription(SOURCE_DESCRIPTION);
-            film.setTitle(jsonResult.getString("Title"));
-            film.setYear(jsonResult.getInt("Year"));
-            film.setCast(jsonResult.getString("Actors"));
-            film.setRating(jsonResult.getDouble("Rating"));
-            film.setPoster(getPosterImageFrom(jsonResult.getString("Poster")));
-            film.setPrimarySource(true);
-
+            film = constructFilmFrom(jsonResult);
         } catch (JSONException e) {
             return null;
         }
@@ -69,8 +65,21 @@ public class IMDBSource implements RatingSource {
         return films;
     }
 
+    private FilmFromSource constructFilmFrom(JSONObject jsonResult) throws JSONException {
+        //Unfortunately the IMDB API only returns a single result
+        FilmFromSource film = new FilmFromSource();
+        film.setSourceDescription(SOURCE_DESCRIPTION);
+        film.setTitle(jsonResult.getString("Title"));
+        film.setYear(jsonResult.getInt("Year"));
+        film.setCast(jsonResult.getString("Actors"));
+        film.setRating(jsonResult.getDouble("Rating"));
+        film.setPoster(getPosterImageFrom(jsonResult.getString("Poster")));
+        film.setPrimarySource(true); //TODO: This shouldn't be assigned internally as we may end up with multiple primary sources
+        return film;
+    }
+
     private Bitmap getPosterImageFrom(String imageURL) {
-        URL myImageURL = null;
+        URL myImageURL;
 
         try {
             myImageURL = new URL(imageURL);

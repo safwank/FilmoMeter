@@ -27,22 +27,42 @@
                         android:orientation="vertical">
                     <safwan.filmometer.views.ScoreMeter
                             android:id="@+id/averageMeter"
-                            android:layout_width="fill_parent"
-                            android:layout_height="wrap_content"/>
+                            android:layout_width="160dp"
+                            android:layout_height="220dp"
+                            android:layout_gravity="center_horizontal"/>
 
-                    <TextView
-                            android:id="@+id/header"
+                    <TableLayout
                             android:layout_width="fill_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            style="@style/LookupHeader"/>
+                            android:layout_height="wrap_content">
+                        <TableRow>
+                            <ImageView
+                                    android:id="@+id/poster"
+                                    android:layout_width="110dp"
+                                    android:layout_height="150dp"
+                                    column="1"/>
+                            <LinearLayout
+                                    android:layout_width="fill_parent"
+                                    android:layout_height="fill_parent"
+                                    android:orientation="vertical">
+                                <TextView
+                                        android:id="@+id/header"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        style="@style/LookupHeader"
+                                        column="2"/>
+                                <TextView
+                                        android:id="@+id/details"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        style="@style/LookupDetails"
+                                        column="2"/>
+                            </LinearLayout>
+                        </TableRow>
 
-                    <TextView
-                            android:id="@+id/details"
-                            android:layout_width="fill_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            style="@style/LookupDetails"/>
+                    </TableLayout>
+
                 </LinearLayout>
             </ScrollView>
 

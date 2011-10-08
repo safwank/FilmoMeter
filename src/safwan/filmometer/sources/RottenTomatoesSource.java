@@ -3,8 +3,7 @@ package safwan.filmometer.sources;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import safwan.filmometer.data.Film;
-import safwan.filmometer.data.SourceFilm;
+import safwan.filmometer.data.FilmFromSource;
 import safwan.filmometer.tools.RestClient;
 
 import java.util.ArrayList;
@@ -14,15 +13,12 @@ public class RottenTomatoesSource implements RatingSource {
 
     private static final String SOURCE_DESCRIPTION = "Rotten Tomatoes";
 
-    public List<SourceFilm> getInfoFor(String film) {
-        return getInfoFor(film, 0);
+    public List<FilmFromSource> getMatchingResultsFor(String film) {
+        return getMatchingResultsFor(film, 0);
     }
 
-    public List<SourceFilm> getInfoFor(String film, int year) {
-        RestClient client = new RestClient("http://api.rottentomatoes.com/api/public/v1.0/movies.json");
-        client.addParam("apikey", "b2x78beenefg6tq3ynr56r4a");
-        client.addParam("q", film);
-        client.addParam("page_limit", "5");
+    public List<FilmFromSource> getMatchingResultsFor(String film, int year) {
+        RestClient client = constructRestClient(film);
 
         try {
             client.execute(RestClient.RequestMethod.GET);
@@ -34,34 +30,25 @@ public class RottenTomatoesSource implements RatingSource {
         return getFilmInfoFrom(response);
     }
 
-    private List<SourceFilm> getFilmInfoFrom(String response) {
+    private RestClient constructRestClient(String film) {
+        RestClient client = new RestClient("http://api.rottentomatoes.com/api/public/v1.0/movies.json");
+        client.addParam("apikey", "b2x78beenefg6tq3ynr56r4a");
+        client.addParam("q", film);
+        client.addParam("page_limit", "5");
+        return client;
+    }
+
+    private List<FilmFromSource> getFilmInfoFrom(String response) {
         if (response == null) {
             return null;
         }
 
-        List<SourceFilm> films = new ArrayList<SourceFilm>();
+        List<FilmFromSource> films = new ArrayList<FilmFromSource>();
 
         try {
             JSONObject rawResult = new JSONObject(response);
-            int resultCount = rawResult.getInt("total");
-
-            if (resultCount > 0) {
-                JSONArray results = rawResult.getJSONArray("movies");
-
-                for (int i = 0; i < results.length(); i++) {
-                    JSONObject currentResult = results.getJSONObject(i);
-
-                    if (null != currentResult) {
-                        SourceFilm film = new SourceFilm();
-                        film.setSourceDescription(SOURCE_DESCRIPTION);
-                        film.setTitle(currentResult.getString("title"));
-                        film.setYear(currentResult.getInt("year"));
-                        film.setCast(getFilmCastFrom(currentResult.getJSONArray("abridged_cast")));
-                        film.setRating(calculateAverageRatingFor(currentResult.getJSONObject("ratings")));
-
-                        films.add(film);
-                    }
-                }
+            if (resultIsNotEmpty(rawResult)) {
+                films = getAllFilmsFrom(rawResult);
             }
         } catch (JSONException e) {
             return null;
@@ -70,9 +57,40 @@ public class RottenTomatoesSource implements RatingSource {
         return films;
     }
 
+    private boolean resultIsNotEmpty(JSONObject rawResult) throws JSONException {
+        int resultCount = rawResult.getInt("total");
+        return resultCount > 0;
+    }
+
+    private List<FilmFromSource> getAllFilmsFrom(JSONObject rawResult) throws JSONException {
+        List<FilmFromSource> films = new ArrayList<FilmFromSource>();
+        JSONArray results = rawResult.getJSONArray("movies");
+
+        for (int i = 0; i < results.length(); i++) {
+            JSONObject currentResult = results.getJSONObject(i);
+            if (null != currentResult) {
+                FilmFromSource film = constructFilmFrom(currentResult);
+                films.add(film);
+            }
+        }
+
+        return films;
+    }
+
+    private FilmFromSource constructFilmFrom(JSONObject currentResult) throws JSONException {
+        FilmFromSource film = new FilmFromSource();
+        film.setSourceDescription(SOURCE_DESCRIPTION);
+        film.setTitle(currentResult.getString("title"));
+        film.setYear(currentResult.getInt("year"));
+        film.setCast(getFilmCastFrom(currentResult.getJSONArray("abridged_cast")));
+        film.setRating(calculateAverageRatingFor(currentResult.getJSONObject("ratings")));
+        return film;
+    }
+
     private String getFilmCastFrom(JSONArray cast) {
         StringBuffer castBuffer = new StringBuffer();
 
+        //TODO: There should be a better way of concatenating the strings. Check the Java API.
         for (int i = 0; i < cast.length(); i++) {
             if (i > 0) {
                 castBuffer.append(", ");
@@ -101,6 +119,8 @@ public class RottenTomatoesSource implements RatingSource {
             e.printStackTrace();
         }
 
-        return totalScore / 2 / 10;
+        int typesOfRating = 2;
+        int fullRating = 10;
+        return totalScore / typesOfRating / fullRating;
     }
 }

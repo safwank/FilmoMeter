@@ -1,0 +1,8 @@
+1. Complete UI revamp
+2. Create unit tests
+3. Plug in mocking framework (Mockito?)
+4. Implement lightweight IoC (ServiceLoader?) for rating sources
+5. Extract utility methods into helper classes
+6. Avoid returning null values
+7. Improve error handling and logging
+8. Should we move API-specific parameters (URL, API key, etc) to a config file?

@@ -1,21 +1,19 @@
 package safwan.filmometer;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.app.TabActivity;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.*;
-import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
-import android.view.animation.LayoutAnimationController;
-import android.view.animation.TranslateAnimation;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TabHost;
 import android.widget.TextView;
@@ -28,44 +26,40 @@ import java.util.Hashtable;
 
 public class LookupActivity extends TabActivity {
     private TabHost mTabHost;
+    private ImageView mPoster;
     private TextView mHeader;
     private TextView mDetails;
     private ProgressDialog mProgressDialog;
     private ScoreMeter mAverageMeter;
     private LinearLayout mMeterList;
-
     private RatingAggregator mAggregator;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.lookup);
-
-        mMeterList = (LinearLayout) findViewById(R.id.meters);
-        mHeader = (TextView) findViewById(R.id.header);
-        mDetails = (TextView) findViewById(R.id.details);
-
-        mAverageMeter = (ScoreMeter) findViewById(R.id.averageMeter);
-
-        mTabHost = getTabHost();
-
-        mTabHost.addTab(mTabHost.newTabSpec("tab_test1").setIndicator("Summary").setContent(R.id.summary));
-        mTabHost.addTab(mTabHost.newTabSpec("tab_test2").setIndicator("Scores").setContent(R.id.meters));
-
-        mTabHost.setCurrentTab(0);
-
         mAggregator = new RatingAggregator();
-
+        setContentView(R.layout.lookup);
+        initializeViews();
+        initializeTabs();
         displaySearchDialog();
         enableTypeToSearchFunctionality();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    private void initializeViews() {
+        mMeterList = (LinearLayout) findViewById(R.id.meters);
+        mPoster = (ImageView) findViewById(R.id.poster);
+        mHeader = (TextView) findViewById(R.id.header);
+        mDetails = (TextView) findViewById(R.id.details);
+        mAverageMeter = (ScoreMeter) findViewById(R.id.averageMeter);
+    }
+
+    private void initializeTabs() {
+        mTabHost = getTabHost();
+        mTabHost.addTab(mTabHost.newTabSpec("tab_test1").setIndicator("Summary").setContent(R.id.summary));
+        mTabHost.addTab(mTabHost.newTabSpec("tab_test2").setIndicator("Scores").setContent(R.id.meters));
+        mTabHost.setCurrentTab(0);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -73,9 +67,6 @@ public class LookupActivity extends TabActivity {
         return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -91,14 +82,12 @@ public class LookupActivity extends TabActivity {
         final String action = intent.getAction();
 
         if (Intent.ACTION_SEARCH.equals(action)) {
-            // Start query for incoming search request
             String query = intent.getStringExtra(SearchManager.QUERY);
             startSearching(query);
         }
     }
 
     private void startSearching(String query) {
-        // Start lookup for new movie in background
         new LookupTask().execute(query);
     }
 
@@ -159,9 +148,11 @@ public class LookupActivity extends TabActivity {
 
     private void setPoster(Bitmap poster) {
         if (poster != null) {
-            mAverageMeter.setPoster(getResizedBitmap(poster, 60, 43));
+            //mAverageMeter.setPoster(getResizedBitmap(poster, 60, 43));
+            mPoster.setImageBitmap(poster);
         } else {
-            mAverageMeter.setPoster(BitmapFactory.decodeResource(getResources(), R.drawable.icon));
+            //mAverageMeter.setPoster(BitmapFactory.decodeResource(getResources(), R.drawable.icon));
+             mPoster.setImageBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.icon));
         }
     }
 
@@ -173,7 +164,6 @@ public class LookupActivity extends TabActivity {
         if (summaryInfo != null) {
             String lineEnding = System.getProperty("line.separator");
             StringBuffer headerBuffer = new StringBuffer();
-
             headerBuffer.append(summaryInfo.getYear());
             headerBuffer.append(lineEnding);
             headerBuffer.append(summaryInfo.getCast());
@@ -202,12 +192,6 @@ public class LookupActivity extends TabActivity {
         mProgressDialog.hide();
     }
 
-    /**
-     * Background task to handle movie rating lookups. This correctly shows and
-     * hides the {@link ProgressDialog} from the GUI thread before starting a
-     * background query to the rating aggregator. When finished, it transitions
-     * back to the GUI thread where it updates with the average rating and details.
-     */
     private class LookupTask extends AsyncTask<String, String, Film> {
         @Override
         protected void onPreExecute() {
